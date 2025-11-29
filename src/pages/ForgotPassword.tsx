@@ -6,16 +6,29 @@ import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import LinkText from '../components/ui/LinkText'
 import SuccessMessage from '../components/ui/SuccessMessage'
+import { useAuth } from '../contexts/AuthContext'
 
 function ForgotPassword() {
   const [email, setEmail] = useState('')
+  const [newPassword, setNewPassword] = useState('')
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const { resetPassword } = useAuth()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle forgot password logic here
-    console.log('Forgot Password:', { email })
-    setIsSubmitted(true)
+    setError(null)
+    setLoading(true)
+
+    try {
+      await resetPassword(email, newPassword)
+      setIsSubmitted(true)
+    } catch (err: any) {
+      setError(err.message || 'Password reset failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (isSubmitted) {
@@ -23,8 +36,8 @@ function ForgotPassword() {
       <AuthLayout gradient="green">
         <FormCard className="text-center">
           <SuccessMessage
-            title="Check Your Email"
-            message={`We've sent a password reset link to ${email}`}
+            title="Password Updated"
+            message="Password updated successfully. You can now sign in with your new password."
             linkTo="/login"
             linkText="Back to Sign In"
             linkColor="green"
@@ -42,6 +55,12 @@ function ForgotPassword() {
           subtitle="No worries, we'll send you reset instructions."
         />
 
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <Input
             id="email"
@@ -52,10 +71,24 @@ function ForgotPassword() {
             required
             placeholder="Enter your email"
             className="focus:ring-green-500"
+            disabled={loading}
           />
 
-          <Button type="submit" fullWidth color="green">
-            Reset Password
+          <Input
+            id="newPassword"
+            label="New Password"
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+            minLength={6}
+            placeholder="Enter new password"
+            className="focus:ring-green-500"
+            disabled={loading}
+          />
+
+          <Button type="submit" fullWidth color="green" disabled={loading}>
+            {loading ? 'Resetting Password...' : 'Reset Password'}
           </Button>
         </form>
 

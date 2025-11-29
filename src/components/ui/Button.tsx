@@ -29,10 +29,11 @@ function Button({
   }
 
   const widthClass = fullWidth ? 'w-full' : ''
+  const disabledClass = props.disabled ? 'opacity-50 cursor-not-allowed' : ''
 
   return (
     <button
-      className={`${baseClasses} ${colorClasses[color]} ${widthClass} ${className}`}
+      className={`${baseClasses} ${colorClasses[color]} ${widthClass} ${disabledClass} ${className}`}
       {...props}
     >
       {children}

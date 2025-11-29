@@ -34,12 +34,17 @@ function TaskModal({
 
   useEffect(() => {
     if (task) {
+      // Handle category - can be string ID or Category object
+      const categoryId = typeof task.category === 'string' 
+        ? task.category 
+        : task.category._id
+
       setFormData({
         title: task.title,
         description: task.description,
         status: task.status,
         priority: task.priority,
-        category: task.category,
+        category: categoryId,
       })
     } else {
       setFormData({
