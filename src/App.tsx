@@ -30,6 +30,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+        {/* Catch-all route - redirect any unmatched routes to login */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   )
