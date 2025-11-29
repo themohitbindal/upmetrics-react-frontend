@@ -86,6 +86,8 @@ function Home() {
             prevTasks.map((task) => (task._id === selectedTask._id ? response.data : task))
           )
           handleCloseModal()
+        } else {
+          throw new Error('Failed to update task')
         }
       } else {
         // Create new task
@@ -93,12 +95,16 @@ function Home() {
         if (response.success) {
           setTasks((prevTasks) => [...prevTasks, response.data])
           handleCloseModal()
+        } else {
+          throw new Error('Failed to create task')
         }
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to save task. Please try again.')
+      // Keep form data and show error - don't close modal
+      setError(err.message || 'Failed to save task. Please check your input and try again.')
       console.error('Error saving task:', err)
-      // Don't close modal on error so user can retry
+      // Re-throw error so TaskModal knows to keep modal open
+      throw err
     }
   }
 
@@ -114,6 +120,82 @@ function Home() {
       setError(err.message || 'Failed to delete task. Please try again.')
       console.error('Error deleting task:', err)
     }
+  }
+
+  const handleTaskDrop = async (taskId: string, newCategoryId: string) => {
+    try {
+      setError(null)
+
+      // Find the task being moved
+      const taskToMove = tasks.find((task) => task._id === taskId)
+      if (!taskToMove) {
+        throw new Error('Task not found')
+      }
+
+      // Check if task is already in the target category
+      const currentCategoryId = typeof taskToMove.category === 'string'
+        ? taskToMove.category
+        : taskToMove.category._id
+
+      if (currentCategoryId === newCategoryId) {
+        // Task is already in this category, no need to update
+        return
+      }
+
+      // Optimistically update the UI
+      setTasks((prevTasks) =>
+        prevTasks.map((task) => {
+          if (task._id === taskId) {
+            // Update the category to the new one
+            return {
+              ...task,
+              category: newCategoryId,
+            }
+          }
+          return task
+        })
+      )
+
+      // Update task category via API
+      const response = await taskService.updateTask(taskId, {
+        category: newCategoryId,
+        title: taskToMove.title,
+        description: taskToMove.description,
+        status: taskToMove.status,
+        priority: taskToMove.priority,
+      })
+
+      if (response.success) {
+        // Update with the response data from server
+        setTasks((prevTasks) =>
+          prevTasks.map((task) => (task._id === taskId ? response.data : task))
+        )
+      } else {
+        // Revert optimistic update on error
+        setTasks((prevTasks) =>
+          prevTasks.map((task) => {
+            if (task._id === taskId) {
+              return taskToMove // Restore original task
+            }
+            return task
+          })
+        )
+        throw new Error(response.message || 'Failed to move task')
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to move task. Please try again.')
+      console.error('Error moving task:', err)
+    }
+  }
+
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null)
+
+  const handleDragStart = (task: Task) => {
+    setDraggedTask(task)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedTask(null)
   }
 
   const handleCloseModal = () => {
@@ -176,6 +258,9 @@ function Home() {
                     tasks={categoryTasks}
                     onAddTask={handleAddTask}
                     onTaskClick={handleTaskClick}
+                    onTaskDrop={handleTaskDrop}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
                   />
                 )
               })

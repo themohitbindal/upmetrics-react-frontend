@@ -30,11 +30,12 @@ function Login() {
 
     try {
       await login(email, password)
+      // Only navigate on success - form data persists on error
       navigate('/home', { replace: true })
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please try again.')
-    } finally {
-      setLoading(false)
+      // Keep form data and show error - don't clear inputs
+      setError(err.message || 'Login failed. Please check your credentials and try again.')
+      setLoading(false) // Set loading to false in catch to keep form enabled
     }
   }
 
@@ -55,7 +56,11 @@ function Login() {
             label="Email Address"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              // Clear error when user starts typing
+              if (error) setError(null)
+            }}
             required
             placeholder="Enter your email"
             disabled={loading}
@@ -66,7 +71,11 @@ function Login() {
             label="Password"
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              // Clear error when user starts typing
+              if (error) setError(null)
+            }}
             required
             placeholder="Enter your password"
             disabled={loading}

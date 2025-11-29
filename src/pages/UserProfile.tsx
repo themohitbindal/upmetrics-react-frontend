@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import AuthLayout from '../components/layouts/AuthLayout'
 import FormCard from '../components/ui/FormCard'
 import PageHeader from '../components/ui/PageHeader'
@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { userService } from '../lib/api/services/userService'
 
 function UserProfile() {
-  const { user } = useAuth()
+  const { user, updateUser } = useAuth()
   const [formData, setFormData] = useState({
     name: '',
     age: '',
@@ -19,16 +19,23 @@ function UserProfile() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const hasLoadedRef = useRef(false) // Track if we've loaded the profile initially
 
   useEffect(() => {
-    loadProfile()
-  }, [user])
+    // Only load profile once on initial mount when user is available
+    // Don't reload if we've already loaded or if we're currently saving
+    if (user?._id && !hasLoadedRef.current && !saving) {
+      loadProfile()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?._id]) // Only depend on user._id, not the whole user object
 
   const loadProfile = async () => {
-    if (!user?._id) return
+    if (!user?._id || saving || hasLoadedRef.current) return // Don't load if already loaded or currently saving
 
     try {
       setLoading(true)
+      setError(null) // Clear previous errors when loading
       const response = await userService.getProfile(user._id)
       if (response.success) {
         setFormData({
@@ -36,6 +43,7 @@ function UserProfile() {
           age: response.data.age?.toString() || '',
           profileImage: response.data.profileImage || '',
         })
+        hasLoadedRef.current = true // Mark as loaded
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load profile')
@@ -50,11 +58,13 @@ function UserProfile() {
       [e.target.name]: e.target.value,
     })
     setSuccess(false)
+    // Clear error when user starts typing
+    if (error) setError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user?._id) return
+    if (!user?._id || saving) return
 
     setError(null)
     setSaving(true)
@@ -68,14 +78,23 @@ function UserProfile() {
 
       const response = await userService.updateProfile(user._id, updateData)
       if (response.success) {
+        // Update auth context user data without reloading
+        updateUser({
+          name: response.data.name,
+          age: response.data.age,
+          profileImage: response.data.profileImage,
+        })
         setSuccess(true)
-        // Update auth context user data
-        window.location.reload() // Simple refresh to update context
+        // Keep success message visible - no reload
+      } else {
+        throw new Error(response.message || 'Failed to update profile')
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to update profile')
+      // Keep form data and show error - don't clear inputs
+      // Form data persists automatically since we're not resetting it
+      setError(err.message || 'Failed to update profile. Please check your input and try again.')
     } finally {
-      setSaving(false)
+      setSaving(false) // Always set saving to false in finally
     }
   }
 

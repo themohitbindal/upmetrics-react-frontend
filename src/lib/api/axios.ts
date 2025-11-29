@@ -1,6 +1,6 @@
 import axios, { AxiosError } from 'axios'
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
-import { API_BASE_URL } from './constants'
+import { API_BASE_URL, API_ENDPOINTS } from './constants'
 import type { ApiError } from './types'
 import { cookieUtils } from '../../utils/cookies'
 
@@ -18,12 +18,34 @@ const apiClient: AxiosInstance = axios.create({
 /**
  * Request Interceptor
  * Add auth token to requests if available
+ * Redirect to login if token is missing for protected endpoints
  */
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Get token from cookies
     const token = cookieUtils.getToken()
     
+    // Check if this is a public (auth) endpoint that doesn't require a token
+    const isPublicEndpoint = 
+      config.url?.includes(API_ENDPOINTS.AUTH.SIGNUP) ||
+      config.url?.includes(API_ENDPOINTS.AUTH.SIGNIN) ||
+      config.url?.includes(API_ENDPOINTS.AUTH.RESET_PASSWORD)
+
+    // If no token and trying to access a protected endpoint, redirect to login
+    if (!token && !isPublicEndpoint) {
+      const currentPath = window.location.pathname
+      const isAuthPage = ['/login', '/signup', '/forgot-password'].includes(currentPath)
+      
+      // Only redirect if not already on an auth page
+      if (!isAuthPage) {
+        cookieUtils.clearAuth() // Clear any stale auth data
+        window.location.href = '/login'
+        // Throw error to prevent the request from being sent
+        throw new Error('No authentication token found. Redirecting to login.')
+      }
+    }
+    
+    // Add token to request if available
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -58,10 +80,19 @@ apiClient.interceptors.response.use(
       // Handle specific status codes
       switch (error.response.status) {
         case 401:
-          // Unauthorized - clear token and redirect to login
+          // Unauthorized - clear token
           cookieUtils.clearAuth()
-          // Redirect to login page
-          window.location.href = '/login'
+          // Only redirect if not already on an auth page or profile page
+          // Profile page should handle its own errors without redirecting
+          const currentPath = window.location.pathname
+          const isAuthPage = ['/login', '/signup', '/forgot-password'].includes(currentPath)
+          const isProfilePage = currentPath === '/profile'
+          
+          if (!isAuthPage && !isProfilePage) {
+            // Redirect to login page only if not on auth pages or profile page
+            window.location.href = '/login'
+          }
+          // If on profile page, let the component handle the error
           break
         case 403:
           // Forbidden

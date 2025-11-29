@@ -32,6 +32,8 @@ function Signup() {
       ...formData,
       [e.target.name]: e.target.value,
     })
+    // Clear error when user starts typing
+    if (error) setError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,11 +48,12 @@ function Signup() {
         name: formData.name || undefined,
         age: formData.age ? parseInt(formData.age) : undefined,
       })
+      // Only navigate on success - form data persists on error
       navigate('/home', { replace: true })
     } catch (err: any) {
-      setError(err.message || 'Signup failed. Please try again.')
-    } finally {
-      setLoading(false)
+      // Keep form data and show error - don't clear inputs
+      setError(err.message || 'Signup failed. Please check your information and try again.')
+      setLoading(false) // Set loading to false in catch to keep form enabled
     }
   }
 

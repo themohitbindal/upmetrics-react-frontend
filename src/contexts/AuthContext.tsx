@@ -12,6 +12,7 @@ interface AuthContextType {
   signup: (data: SignupData) => Promise<void>
   logout: () => void
   resetPassword: (email: string, password: string) => Promise<void>
+  updateUser: (userData: Partial<UserData>) => void
 }
 
 interface SignupData {
@@ -95,6 +96,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
+  const updateUser = (userData: Partial<UserData>) => {
+    if (user) {
+      const updatedUser = { ...user, ...userData }
+      setUser(updatedUser)
+      cookieUtils.setUser(updatedUser) // Update cookie as well
+    }
+  }
+
   const value: AuthContextType = {
     user,
     token,
@@ -104,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signup,
     logout,
     resetPassword,
+    updateUser,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

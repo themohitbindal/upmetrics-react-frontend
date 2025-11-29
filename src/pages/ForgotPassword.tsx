@@ -25,9 +25,9 @@ function ForgotPassword() {
       await resetPassword(email, newPassword)
       setIsSubmitted(true)
     } catch (err: any) {
-      setError(err.message || 'Password reset failed. Please try again.')
-    } finally {
-      setLoading(false)
+      // Keep form data and show error - don't clear inputs
+      setError(err.message || 'Password reset failed. Please check your email and try again.')
+      setLoading(false) // Set loading to false in catch to keep form enabled
     }
   }
 
@@ -67,7 +67,11 @@ function ForgotPassword() {
             label="Email Address"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              // Clear error when user starts typing
+              if (error) setError(null)
+            }}
             required
             placeholder="Enter your email"
             className="focus:ring-green-500"
@@ -79,7 +83,11 @@ function ForgotPassword() {
             label="New Password"
             type="password"
             value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            onChange={(e) => {
+              setNewPassword(e.target.value)
+              // Clear error when user starts typing
+              if (error) setError(null)
+            }}
             required
             minLength={6}
             placeholder="Enter new password"
