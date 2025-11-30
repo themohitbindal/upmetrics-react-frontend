@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
+import type { ReactNode } from 'react'
 import { cookieUtils } from '../utils/cookies'
 import { authService, type UserData } from '../lib/api/services/authService'
 import type { ApiError } from '../lib/api/types'

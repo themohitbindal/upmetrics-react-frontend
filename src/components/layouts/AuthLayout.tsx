@@ -13,7 +13,7 @@ function AuthLayout({ children, gradient = 'blue' }: AuthLayoutProps) {
   }
 
   return (
-    <div className={`min-h-screen flex items-center justify-center ${gradientClasses[gradient]} px-4`}>
+    <div className={`min-h-screen flex items-center justify-center ${gradientClasses[gradient]} px-4 py-8`}>
       <div className="max-w-md w-full">
         {children}
       </div>

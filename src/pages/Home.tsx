@@ -188,15 +188,6 @@ function Home() {
     }
   }
 
-  const [draggedTask, setDraggedTask] = useState<Task | null>(null)
-
-  const handleDragStart = (task: Task) => {
-    setDraggedTask(task)
-  }
-
-  const handleDragEnd = () => {
-    setDraggedTask(null)
-  }
 
   const handleCloseModal = () => {
     setIsModalOpen(false)
@@ -259,8 +250,6 @@ function Home() {
                     onAddTask={handleAddTask}
                     onTaskClick={handleTaskClick}
                     onTaskDrop={handleTaskDrop}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
                   />
                 )
               })
