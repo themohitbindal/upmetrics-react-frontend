@@ -7,6 +7,7 @@ import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import LinkText from '../components/ui/LinkText'
 import { useAuth } from '../contexts/AuthContext'
+import { ROUTES } from '../config/routes'
 
 function Login() {
   const [email, setEmail] = useState('')
@@ -19,7 +20,7 @@ function Login() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/home', { replace: true })
+      navigate(ROUTES.HOME, { replace: true })
     }
   }, [isAuthenticated, navigate])
 
@@ -31,10 +32,14 @@ function Login() {
     try {
       await login(email, password)
       // Only navigate on success - form data persists on error
-      navigate('/home', { replace: true })
-    } catch (err: any) {
+      navigate(ROUTES.HOME, { replace: true })
+    } catch (err: unknown) {
       // Keep form data and show error - don't clear inputs
-      setError(err.message || 'Login failed. Please check your credentials and try again.')
+      if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError('Login failed. Please check your credentials and try again.')
+      }
       setLoading(false) // Set loading to false in catch to keep form enabled
     }
   }
@@ -81,18 +86,8 @@ function Login() {
             disabled={loading}
           />
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember"
-                type="checkbox"
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-              />
-              <label htmlFor="remember" className="ml-2 block text-sm text-gray-700">
-                Remember me
-              </label>
-            </div>
-            <LinkText to="/forgot-password" color="indigo">
+          <div className="flex items-center justify-end">
+            <LinkText to={ROUTES.FORGOT_PASSWORD} color="indigo">
               Forgot password?
             </LinkText>
           </div>
@@ -104,7 +99,7 @@ function Login() {
 
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
-            Don't have an account? <LinkText to="/signup" color="indigo">Sign up</LinkText>
+            Don't have an account? <LinkText to={ROUTES.SIGNUP} color="indigo">Sign up</LinkText>
           </p>
         </div>
       </FormCard>

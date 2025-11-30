@@ -7,6 +7,7 @@ import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import LinkText from '../components/ui/LinkText'
 import { useAuth } from '../contexts/AuthContext'
+import { ROUTES } from '../config/routes'
 
 function Signup() {
   const [formData, setFormData] = useState({
@@ -23,7 +24,7 @@ function Signup() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/home', { replace: true })
+      navigate(ROUTES.HOME, { replace: true })
     }
   }, [isAuthenticated, navigate])
 
@@ -49,10 +50,14 @@ function Signup() {
         age: formData.age ? parseInt(formData.age) : undefined,
       })
       // Only navigate on success - form data persists on error
-      navigate('/home', { replace: true })
-    } catch (err: any) {
+      navigate(ROUTES.HOME, { replace: true })
+    } catch (err: unknown) {
       // Keep form data and show error - don't clear inputs
-      setError(err.message || 'Signup failed. Please check your information and try again.')
+      if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError('Signup failed. Please check your information and try again.')
+      }
       setLoading(false) // Set loading to false in catch to keep form enabled
     }
   }
@@ -129,7 +134,7 @@ function Signup() {
 
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
-            Already have an account? <LinkText to="/login" color="purple">Sign in</LinkText>
+            Already have an account? <LinkText to={ROUTES.LOGIN} color="purple">Sign in</LinkText>
           </p>
         </div>
       </FormCard>

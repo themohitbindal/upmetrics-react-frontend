@@ -7,6 +7,7 @@ import Button from '../components/ui/Button'
 import LinkText from '../components/ui/LinkText'
 import SuccessMessage from '../components/ui/SuccessMessage'
 import { useAuth } from '../contexts/AuthContext'
+import { ROUTES } from '../config/routes'
 
 function ForgotPassword() {
   const [email, setEmail] = useState('')
@@ -24,9 +25,13 @@ function ForgotPassword() {
     try {
       await resetPassword(email, newPassword)
       setIsSubmitted(true)
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Keep form data and show error - don't clear inputs
-      setError(err.message || 'Password reset failed. Please check your email and try again.')
+      if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError('Password reset failed. Please check your email and try again.')
+      }
       setLoading(false) // Set loading to false in catch to keep form enabled
     }
   }
@@ -38,7 +43,7 @@ function ForgotPassword() {
           <SuccessMessage
             title="Password Updated"
             message="Password updated successfully. You can now sign in with your new password."
-            linkTo="/login"
+            linkTo={ROUTES.LOGIN}
             linkText="Back to Sign In"
             linkColor="green"
           />
@@ -101,7 +106,7 @@ function ForgotPassword() {
         </form>
 
         <div className="mt-6 text-center">
-          <LinkText to="/login" color="green">
+          <LinkText to={ROUTES.LOGIN} color="green">
             ← Back to Sign In
           </LinkText>
         </div>
