@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Category, Task } from '../types/task'
 import TaskCard from './TaskCard'
 
@@ -6,11 +7,59 @@ interface TaskBoardProps {
   tasks: Task[]
   onAddTask: (categoryId: string) => void
   onTaskClick: (task: Task) => void
+  onTaskDrop?: (taskId: string, newCategoryId: string) => void
+  onDragStart?: (task: Task) => void
+  onDragEnd?: () => void
 }
 
-function TaskBoard({ category, tasks, onAddTask, onTaskClick }: TaskBoardProps) {
+function TaskBoard({ 
+  category, 
+  tasks, 
+  onAddTask, 
+  onTaskClick, 
+  onTaskDrop,
+  onDragStart,
+  onDragEnd 
+}: TaskBoardProps) {
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null)
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    e.dataTransfer.dropEffect = 'move'
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    // Only set drag over to false if we're leaving the board container
+    if (e.currentTarget === e.target) {
+      setIsDragOver(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+
+    const taskId = e.dataTransfer.getData('text/plain')
+    if (taskId && onTaskDrop) {
+      onTaskDrop(taskId, category._id)
+    }
+  }
+
   return (
-    <div className="flex-shrink-0 w-80 bg-white rounded-xl shadow-lg p-4">
+    <div
+      className={`flex-shrink-0 w-80 bg-white rounded-xl shadow-lg p-4 transition-colors ${
+        isDragOver ? 'bg-indigo-50 border-2 border-indigo-300 border-dashed' : ''
+      }`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {/* Board Header */}
       <div className="mb-4 pb-3 border-b border-gray-200">
         <div className="flex justify-between items-start">
@@ -38,7 +87,7 @@ function TaskBoard({ category, tasks, onAddTask, onTaskClick }: TaskBoardProps) 
       </div>
 
       {/* Tasks Container - Vertical */}
-      <div className="space-y-3 max-h-[calc(100vh-300px)] overflow-y-auto custom-scrollbar pr-2">
+      <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto custom-scrollbar px-2">
         {tasks.length === 0 ? (
           <div className="text-center py-8 text-gray-400">
             <p className="text-sm mb-3">No tasks in this category</p>
@@ -51,8 +100,30 @@ function TaskBoard({ category, tasks, onAddTask, onTaskClick }: TaskBoardProps) 
           </div>
         ) : (
           tasks.map((task) => (
-            <div key={task._id} onClick={() => onTaskClick(task)}>
-              <TaskCard task={task} />
+            <div 
+              key={task._id}
+              className="relative py-1"
+              onClick={() => {
+                // Only trigger click if this task wasn't just dragged
+                if (draggedTaskId !== task._id) {
+                  onTaskClick(task)
+                }
+              }}
+            >
+              <TaskCard 
+                task={task} 
+                onDragStart={(t) => {
+                  setDraggedTaskId(t._id)
+                  if (onDragStart) onDragStart(t)
+                }}
+                onDragEnd={() => {
+                  // Reset after a short delay to allow click to work
+                  setTimeout(() => {
+                    setDraggedTaskId(null)
+                  }, 100)
+                  if (onDragEnd) onDragEnd()
+                }}
+              />
             </div>
           ))
         )}

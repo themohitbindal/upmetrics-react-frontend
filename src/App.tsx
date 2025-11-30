@@ -4,6 +4,7 @@ import Signup from './pages/Signup'
 import ForgotPassword from './pages/ForgotPassword'
 import Home from './pages/Home'
 import UserProfile from './pages/UserProfile'
+import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   return (
@@ -13,8 +14,24 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/profile" element={<UserProfile />} />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <UserProfile />
+            </ProtectedRoute>
+          }
+        />
+        {/* Catch-all route - redirect any unmatched routes to login */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   )

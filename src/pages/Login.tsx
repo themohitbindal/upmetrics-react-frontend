@@ -1,19 +1,42 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import AuthLayout from '../components/layouts/AuthLayout'
 import FormCard from '../components/ui/FormCard'
 import PageHeader from '../components/ui/PageHeader'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import LinkText from '../components/ui/LinkText'
+import { useAuth } from '../contexts/AuthContext'
 
 function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const { login, isAuthenticated } = useAuth()
+  const navigate = useNavigate()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/home', { replace: true })
+    }
+  }, [isAuthenticated, navigate])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle login logic here
-    console.log('Login:', { email, password })
+    setError(null)
+    setLoading(true)
+
+    try {
+      await login(email, password)
+      // Only navigate on success - form data persists on error
+      navigate('/home', { replace: true })
+    } catch (err: any) {
+      // Keep form data and show error - don't clear inputs
+      setError(err.message || 'Login failed. Please check your credentials and try again.')
+      setLoading(false) // Set loading to false in catch to keep form enabled
+    }
   }
 
   return (
@@ -21,15 +44,26 @@ function Login() {
       <FormCard>
         <PageHeader title="Welcome Back" subtitle="Sign in to your account" />
 
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <Input
             id="email"
             label="Email Address"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              // Clear error when user starts typing
+              if (error) setError(null)
+            }}
             required
             placeholder="Enter your email"
+            disabled={loading}
           />
 
           <Input
@@ -37,9 +71,14 @@ function Login() {
             label="Password"
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              // Clear error when user starts typing
+              if (error) setError(null)
+            }}
             required
             placeholder="Enter your password"
+            disabled={loading}
           />
 
           <div className="flex items-center justify-between">
@@ -58,8 +97,8 @@ function Login() {
             </LinkText>
           </div>
 
-          <Button type="submit" fullWidth color="indigo">
-            Sign In
+          <Button type="submit" fullWidth color="indigo" disabled={loading}>
+            {loading ? 'Signing In...' : 'Sign In'}
           </Button>
         </form>
 

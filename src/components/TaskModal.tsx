@@ -6,7 +6,7 @@ import Button from './ui/Button'
 interface TaskModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (task: Omit<Task, '_id' | 'createdAt' | 'updatedAt'>) => void
+  onSave: (task: Omit<Task, '_id' | 'createdAt' | 'updatedAt'>) => Promise<void>
   onDelete?: (taskId: string) => void
   task?: Task | null
   categories: Category[]
@@ -29,18 +29,32 @@ function TaskModal({
     priority: 'medium' as Task['priority'],
     category: '',
   })
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   const isEditMode = !!task
 
   useEffect(() => {
+    if (!isOpen) {
+      // Reset form and error when modal is closed
+      setError(null)
+      return
+    }
+
     if (task) {
+      // Handle category - can be string ID or Category object
+      const categoryId = typeof task.category === 'string' 
+        ? task.category 
+        : task.category._id
+
       setFormData({
         title: task.title,
         description: task.description,
         status: task.status,
         priority: task.priority,
-        category: task.category,
+        category: categoryId,
       })
+      setError(null) // Clear error when loading task data
     } else {
       setFormData({
         title: '',
@@ -49,20 +63,34 @@ function TaskModal({
         priority: 'medium',
         category: defaultCategoryId || categories[0]?._id || '',
       })
+      setError(null) // Clear error when creating new task
     }
-  }, [task, defaultCategoryId, categories])
+  }, [task, defaultCategoryId, categories, isOpen])
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+    // Clear error when user starts typing
+    if (error) setError(null)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSave(formData)
-    onClose()
+    setError(null)
+    setLoading(true)
+
+    try {
+      await onSave(formData)
+      // Parent component will close modal on success
+      // Form data persists on error automatically
+    } catch (err: any) {
+      // Show error in modal, keep form data
+      setError(err.message || 'Failed to save task. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleDelete = () => {
@@ -110,6 +138,13 @@ function TaskModal({
             </button>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
           {/* Modal Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
@@ -121,6 +156,7 @@ function TaskModal({
               onChange={handleChange}
               required
               placeholder="Enter task title"
+              disabled={loading}
             />
 
             <div>
@@ -134,7 +170,8 @@ function TaskModal({
                 onChange={handleChange}
                 required
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none"
+                disabled={loading}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Enter task description"
               />
             </div>
@@ -150,7 +187,8 @@ function TaskModal({
                   value={formData.category}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  disabled={loading}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {categories.map((cat) => (
                     <option key={cat._id} value={cat._id}>
@@ -170,7 +208,8 @@ function TaskModal({
                   value={formData.status}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                  disabled={loading}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="pending">Pending</option>
                   <option value="in-progress">In Progress</option>
@@ -189,7 +228,8 @@ function TaskModal({
                 value={formData.priority}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                disabled={loading}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -203,7 +243,8 @@ function TaskModal({
                 <button
                   type="button"
                   onClick={handleDelete}
-                  className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition flex-shrink-0"
+                  disabled={loading}
+                  className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Delete
                 </button>
@@ -211,12 +252,13 @@ function TaskModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition flex-shrink-0"
+                disabled={loading}
+                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
-              <Button type="submit" fullWidth color="indigo" className="flex-1">
-                {isEditMode ? 'Update Task' : 'Create Task'}
+              <Button type="submit" fullWidth color="indigo" className="flex-1" disabled={loading}>
+                {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Task' : 'Create Task')}
               </Button>
             </div>
           </form>

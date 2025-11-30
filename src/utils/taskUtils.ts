@@ -2,9 +2,15 @@ import type { Task } from '../types/task'
 
 /**
  * Get tasks filtered by category ID
+ * Handles both string category ID and Category object
  */
 export const getTasksByCategory = (tasks: Task[], categoryId: string): Task[] => {
-  return tasks.filter((task) => task.category === categoryId)
+  return tasks.filter((task) => {
+    const taskCategoryId = typeof task.category === 'string' 
+      ? task.category 
+      : task.category._id
+    return taskCategoryId === categoryId
+  })
 }
 
 /**
