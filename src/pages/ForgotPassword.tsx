@@ -6,16 +6,43 @@ import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import LinkText from '../components/ui/LinkText'
 import SuccessMessage from '../components/ui/SuccessMessage'
+import { resetPassword } from '../api/auth'
 
 function ForgotPassword() {
   const [email, setEmail] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [isSubmitted, setIsSubmitted] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle forgot password logic here
-    console.log('Forgot Password:', { email })
-    setIsSubmitted(true)
+    setError(null)
+
+    // Validate passwords match
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
+    // Validate password length
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters')
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      await resetPassword(email, newPassword)
+      setIsSubmitted(true)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Password reset failed. Please try again.'
+      setError(errorMessage)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   if (isSubmitted) {
@@ -23,8 +50,8 @@ function ForgotPassword() {
       <AuthLayout gradient="green">
         <FormCard className="text-center">
           <SuccessMessage
-            title="Check Your Email"
-            message={`We've sent a password reset link to ${email}`}
+            title="Password Reset Successful"
+            message="Your password has been updated. You can now sign in with your new password."
             linkTo="/login"
             linkText="Back to Sign In"
             linkColor="green"
@@ -38,11 +65,17 @@ function ForgotPassword() {
     <AuthLayout gradient="green">
       <FormCard>
         <PageHeader
-          title="Forgot Password?"
-          subtitle="No worries, we'll send you reset instructions."
+          title="Reset Password"
+          subtitle="Enter your email and new password"
         />
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
+              {error}
+            </div>
+          )}
+
           <Input
             id="email"
             label="Email Address"
@@ -52,10 +85,37 @@ function ForgotPassword() {
             required
             placeholder="Enter your email"
             className="focus:ring-green-500"
+            disabled={isLoading}
           />
 
-          <Button type="submit" fullWidth color="green">
-            Reset Password
+          <Input
+            id="newPassword"
+            label="New Password"
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+            minLength={6}
+            placeholder="Enter new password"
+            className="focus:ring-green-500"
+            disabled={isLoading}
+          />
+
+          <Input
+            id="confirmPassword"
+            label="Confirm Password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            minLength={6}
+            placeholder="Confirm new password"
+            className="focus:ring-green-500"
+            disabled={isLoading}
+          />
+
+          <Button type="submit" fullWidth color="green" disabled={isLoading}>
+            {isLoading ? 'Resetting Password...' : 'Reset Password'}
           </Button>
         </form>
 
@@ -70,6 +130,3 @@ function ForgotPassword() {
 }
 
 export default ForgotPassword
-
-
-

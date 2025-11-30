@@ -6,8 +6,8 @@ import Button from './ui/Button'
 interface TaskModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (task: Omit<Task, '_id' | 'createdAt' | 'updatedAt'>) => void
-  onDelete?: (taskId: string) => void
+  onSave: (task: Omit<Task, '_id' | 'createdAt' | 'updatedAt'>) => Promise<void>
+  onDelete?: (taskId: string) => Promise<void>
   task?: Task | null
   categories: Category[]
   defaultCategoryId?: string
@@ -29,17 +29,23 @@ function TaskModal({
     priority: 'medium' as Task['priority'],
     category: '',
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const isEditMode = !!task
 
   useEffect(() => {
     if (task) {
+      // Extract category ID if category is an object
+      const categoryId = typeof task.category === 'object' 
+        ? task.category._id 
+        : task.category
       setFormData({
         title: task.title,
         description: task.description,
         status: task.status,
         priority: task.priority,
-        category: task.category,
+        category: categoryId,
       })
     } else {
       setFormData({
@@ -50,6 +56,8 @@ function TaskModal({
         category: defaultCategoryId || categories[0]?._id || '',
       })
     }
+    // Reset error when modal opens/closes or task changes
+    setError(null)
   }, [task, defaultCategoryId, categories])
 
   const handleChange = (
@@ -59,16 +67,34 @@ function TaskModal({
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSave(formData)
-    onClose()
+    setIsSubmitting(true)
+    setError(null)
+    try {
+      await onSave(formData)
+      onClose()
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save task'
+      setError(errorMessage)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (task && onDelete && window.confirm('Are you sure you want to delete this task?')) {
-      onDelete(task._id)
-      onClose()
+      setIsSubmitting(true)
+      setError(null)
+      try {
+        await onDelete(task._id)
+        onClose()
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to delete task'
+        setError(errorMessage)
+      } finally {
+        setIsSubmitting(false)
+      }
     }
   }
 
@@ -109,6 +135,13 @@ function TaskModal({
               </svg>
             </button>
           </div>
+
+          {/* Error Display */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          )}
 
           {/* Modal Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -203,20 +236,22 @@ function TaskModal({
                 <button
                   type="button"
                   onClick={handleDelete}
-                  className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition flex-shrink-0"
+                  disabled={isSubmitting}
+                  className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Delete
+                  {isSubmitting ? 'Deleting...' : 'Delete'}
                 </button>
               )}
               <button
                 type="button"
                 onClick={onClose}
-                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition flex-shrink-0"
+                disabled={isSubmitting}
+                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
-              <Button type="submit" fullWidth color="indigo" className="flex-1">
-                {isEditMode ? 'Update Task' : 'Create Task'}
+              <Button type="submit" fullWidth color="indigo" className="flex-1" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : (isEditMode ? 'Update Task' : 'Create Task')}
               </Button>
             </div>
           </form>
