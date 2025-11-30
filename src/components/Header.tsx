@@ -1,9 +1,17 @@
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { getImageUrl } from '../utils/imageUtils'
 
 function Header() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [imageError, setImageError] = useState(false)
+
+  // Reset image error when user or profile image changes
+  useEffect(() => {
+    setImageError(false)
+  }, [user?.profileImage])
 
   const handleLogout = () => {
     logout()
@@ -25,14 +33,23 @@ function Header() {
               to="/profile"
               className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 font-medium transition"
             >
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              {user?.profileImage && !imageError ? (
+                <img
+                  src={getImageUrl(user.profileImage) || ''}
+                  alt={user.name || 'Profile'}
+                  className="h-8 w-8 rounded-full object-cover border-2 border-indigo-200"
+                  onError={() => setImageError(true)}
                 />
-              </svg>
+              ) : (
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              )}
               <span>Profile</span>
             </Link>
             <button

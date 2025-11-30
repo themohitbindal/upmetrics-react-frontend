@@ -7,14 +7,18 @@ import Button from '../components/ui/Button'
 import LinkText from '../components/ui/LinkText'
 import { useAuth } from '../contexts/AuthContext'
 import { userService } from '../lib/api/services/userService'
+import { getImageUrl, validateImageFile } from '../utils/imageUtils'
 
 function UserProfile() {
   const { user, updateUser } = useAuth()
   const [formData, setFormData] = useState({
     name: '',
     age: '',
-    profileImage: '',
   })
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null)
+  const [imageError, setImageError] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,8 +45,14 @@ function UserProfile() {
         setFormData({
           name: response.data.name || '',
           age: response.data.age?.toString() || '',
-          profileImage: response.data.profileImage || '',
         })
+        // Set current image URL for display
+        if (response.data.profileImage) {
+          const fullImageUrl = getImageUrl(response.data.profileImage)
+          setCurrentImageUrl(fullImageUrl)
+          setImagePreview(fullImageUrl)
+          setImageError(false) // Reset error state
+        }
         hasLoadedRef.current = true // Mark as loaded
       }
     } catch (err: any) {
@@ -62,6 +72,29 @@ function UserProfile() {
     if (error) setError(null)
   }
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file
+      const validationError = validateImageFile(file)
+      if (validationError) {
+        setError(validationError)
+        return
+      }
+      
+      setImageFile(file)
+      setError(null)
+      setSuccess(false)
+      
+      // Create preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user?._id || saving) return
@@ -74,7 +107,10 @@ function UserProfile() {
       const updateData: any = {}
       if (formData.name) updateData.name = formData.name
       if (formData.age) updateData.age = parseInt(formData.age)
-      if (formData.profileImage) updateData.profileImage = formData.profileImage
+      // Add image file if selected
+      if (imageFile) {
+        updateData.profileImage = imageFile
+      }
 
       const response = await userService.updateProfile(user._id, updateData)
       if (response.success) {
@@ -84,6 +120,18 @@ function UserProfile() {
           age: response.data.age,
           profileImage: response.data.profileImage,
         })
+        
+        // Update image preview with new image URL from server
+        if (response.data.profileImage) {
+          const fullImageUrl = getImageUrl(response.data.profileImage)
+          setCurrentImageUrl(fullImageUrl)
+          setImagePreview(fullImageUrl)
+          setImageError(false) // Reset error state
+        }
+        
+        // Clear the file input (reset to allow selecting the same file again)
+        setImageFile(null)
+        
         setSuccess(true)
         // Keep success message visible - no reload
       } else {
@@ -98,7 +146,17 @@ function UserProfile() {
     }
   }
 
-  const profileIcon = (
+  // Profile icon - show image if available, otherwise show default icon
+  const profileIcon = imagePreview && !imageError ? (
+    <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full overflow-hidden border-4 border-indigo-100">
+      <img
+        src={imagePreview}
+        alt="Profile"
+        className="w-full h-full object-cover"
+        onError={() => setImageError(true)}
+      />
+    </div>
+  ) : (
     <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-indigo-100">
       <svg className="h-12 w-12 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
@@ -180,16 +238,66 @@ function UserProfile() {
             disabled={saving}
           />
 
-          <Input
-            id="profileImage"
-            name="profileImage"
-            label="Profile Image URL"
-            type="url"
-            value={formData.profileImage}
-            onChange={handleChange}
-            placeholder="Enter profile image URL (optional)"
-            disabled={saving}
-          />
+          {/* Profile Image Upload */}
+          <div>
+            <label htmlFor="profileImage" className="block text-sm font-medium text-gray-700 mb-2">
+              Profile Image
+            </label>
+            <div className="space-y-3">
+              {/* Current Image Display */}
+              {currentImageUrl && !imageFile && (
+                <div className="flex items-center space-x-4">
+                  <div className="flex-shrink-0">
+                    <img
+                      src={currentImageUrl}
+                      alt="Current profile"
+                      className="h-24 w-24 rounded-full object-cover border-2 border-gray-200"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.style.display = 'none'
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-600">Current profile image</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Image Preview (when new file selected) */}
+              {imagePreview && imageFile && (
+                <div className="flex items-center space-x-4">
+                  <div className="flex-shrink-0">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="h-24 w-24 rounded-full object-cover border-2 border-indigo-300"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-600">New image preview</p>
+                    <p className="text-xs text-gray-500 mt-1">{imageFile.name}</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* File Input */}
+              <div>
+                <input
+                  id="profileImage"
+                  name="profileImage"
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                  onChange={handleImageChange}
+                  disabled={saving}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Maximum file size: 5MB. Allowed formats: JPEG, PNG, GIF, WebP
+                </p>
+              </div>
+            </div>
+          </div>
 
           <Button type="submit" fullWidth color="indigo" disabled={saving}>
             {saving ? 'Updating...' : 'Update Profile'}

@@ -21,7 +21,7 @@ export interface UserProfile {
 export interface UpdateProfileData {
   name?: string
   age?: number
-  profileImage?: string
+  profileImage?: string | File
   // Note: email cannot be updated according to backend
 }
 
@@ -38,9 +38,34 @@ export const userService = {
    * Update user profile
    * PUT /api/users/:id
    * Note: Email cannot be updated
+   * Supports file upload via FormData when profileImage is a File
    */
   updateProfile: async (userId: string, data: UpdateProfileData): Promise<ApiResponse<UserProfile>> => {
-    return (await apiClient.put(API_ENDPOINTS.USER.UPDATE(userId), data)) as unknown as ApiResponse<UserProfile>
+    // Check if we need to use FormData (when profileImage is a File)
+    const hasFile = data.profileImage instanceof File
+    
+    if (hasFile) {
+      // Create FormData for file upload
+      const formData = new FormData()
+      
+      // Add text fields
+      if (data.name) {
+        formData.append('name', data.name)
+      }
+      if (data.age !== undefined) {
+        formData.append('age', data.age.toString())
+      }
+      
+      // Add image file
+      if (data.profileImage instanceof File) {
+        formData.append('profileImage', data.profileImage)
+      }
+      
+      return (await apiClient.put(API_ENDPOINTS.USER.UPDATE(userId), formData)) as unknown as ApiResponse<UserProfile>
+    } else {
+      // Use regular JSON for text-only updates
+      return (await apiClient.put(API_ENDPOINTS.USER.UPDATE(userId), data)) as unknown as ApiResponse<UserProfile>
+    }
   },
 }
 
