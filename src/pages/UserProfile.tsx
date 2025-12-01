@@ -81,11 +81,11 @@ function UserProfile() {
         setError(validationError)
         return
       }
-      
+
       setImageFile(file)
       setError(null)
       setSuccess(false)
-      
+
       // Create preview
       const reader = new FileReader()
       reader.onloadend = () => {
@@ -120,7 +120,7 @@ function UserProfile() {
           age: response.data.age,
           profileImage: response.data.profileImage,
         })
-        
+
         // Update image preview with new image URL from server
         if (response.data.profileImage) {
           const fullImageUrl = getImageUrl(response.data.profileImage)
@@ -128,10 +128,10 @@ function UserProfile() {
           setImagePreview(fullImageUrl)
           setImageError(false) // Reset error state
         }
-        
+
         // Clear the file input (reset to allow selecting the same file again)
         setImageFile(null)
-        
+
         setSuccess(true)
         // Keep success message visible - no reload
       } else {
@@ -263,7 +263,7 @@ function UserProfile() {
                   </div>
                 </div>
               )}
-              
+
               {/* Image Preview (when new file selected) */}
               {imagePreview && imageFile && (
                 <div className="flex items-center space-x-4">
@@ -280,7 +280,7 @@ function UserProfile() {
                   </div>
                 </div>
               )}
-              
+
               {/* File Input */}
               <div>
                 <input
@@ -293,7 +293,7 @@ function UserProfile() {
                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Maximum file size: 5MB. Allowed formats: JPEG, PNG, GIF, WebP
+                  Maximum file size: 1MB. Allowed formats: JPEG, PNG, GIF, WebP
                 </p>
               </div>
             </div>

@@ -66,7 +66,7 @@ export const authService = {
    * Clears token from cookies
    */
   logout: (): void => {
-    // This is handled by AuthContext, but kept for consistency
+    // This is handled by AuthContext, but lets keep it here so we know that we dont need it here
   },
 }
 
