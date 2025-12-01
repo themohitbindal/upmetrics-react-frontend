@@ -156,7 +156,7 @@ function TaskCard({ task, onDragStart, onDragEnd }: TaskCardProps) {
       )}
       {/* Task Header */}
       <div className="flex items-start justify-between mb-2">
-        <h4 className="font-semibold text-gray-900 text-sm flex-1">{task.title}</h4>
+        <h4 className="font-semibold text-gray-900 text-sm flex-1 line-clamp-2 break-words" title={task.title}>{task.title}</h4>
         <div
           className={`w-2 h-2 rounded-full ${getStatusColor(task.status)} ml-2 flex-shrink-0 mt-1`}
           title={task.status}
