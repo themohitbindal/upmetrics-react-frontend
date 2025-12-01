@@ -18,11 +18,11 @@ function TaskCard({ task, onDragStart, onDragEnd }: TaskCardProps) {
     e.dataTransfer.setData('text/plain', task._id)
     // Store task data for easier access
     e.dataTransfer.setData('application/json', JSON.stringify(task))
-    
+
     // Create a custom drag image for better visibility
     const originalElement = e.currentTarget
     const dragImage = originalElement.cloneNode(true) as HTMLElement
-    
+
     // Style the drag image to be HIGHLY visible and clear
     dragImage.style.width = `${originalElement.offsetWidth}px`
     dragImage.style.position = 'absolute'
@@ -39,19 +39,19 @@ function TaskCard({ task, onDragStart, onDragEnd }: TaskCardProps) {
     dragImage.style.cursor = 'grabbing'
     dragImage.style.filter = 'brightness(1.25) saturate(1.3) contrast(1.2)'
     dragImage.style.backdropFilter = 'blur(0px)'
-    
+
     // Force white background on all child elements
     const allElements = dragImage.querySelectorAll('*')
     allElements.forEach((el) => {
       const htmlEl = el as HTMLElement
       htmlEl.style.opacity = '1'
-      
+
       // Ensure background is white for text containers
       if (htmlEl.tagName === 'DIV' && !htmlEl.style.backgroundColor) {
         htmlEl.style.backgroundColor = 'transparent'
       }
     })
-    
+
     // Specifically enhance title visibility - make it VERY bold and dark
     const titleElements = dragImage.querySelectorAll('h4')
     titleElements.forEach((el) => {
@@ -62,7 +62,7 @@ function TaskCard({ task, onDragStart, onDragEnd }: TaskCardProps) {
       htmlEl.style.textShadow = '0 2px 4px rgba(255, 255, 255, 1), 0 0 0 rgba(0, 0, 0, 0.1)'
       htmlEl.style.letterSpacing = '0.01em'
     })
-    
+
     // Make description text very visible
     const descElements = dragImage.querySelectorAll('p')
     descElements.forEach((el) => {
@@ -73,7 +73,7 @@ function TaskCard({ task, onDragStart, onDragEnd }: TaskCardProps) {
       htmlEl.style.textShadow = '0 1px 3px rgba(255, 255, 255, 1)'
       htmlEl.style.lineHeight = '1.5'
     })
-    
+
     // Enhance badge/priority visibility - make them stand out
     const badgeElements = dragImage.querySelectorAll('span')
     badgeElements.forEach((el) => {
@@ -85,7 +85,7 @@ function TaskCard({ task, onDragStart, onDragEnd }: TaskCardProps) {
         htmlEl.style.textShadow = 'none'
       }
     })
-    
+
     // Make date text more visible
     const dateElements = dragImage.querySelectorAll('span.text-gray-400, span.text-xs')
     dateElements.forEach((el) => {
@@ -96,7 +96,7 @@ function TaskCard({ task, onDragStart, onDragEnd }: TaskCardProps) {
         htmlEl.style.textShadow = '0 1px 2px rgba(255, 255, 255, 0.9)'
       }
     })
-    
+
     // Enhance status dot visibility
     const statusDots = dragImage.querySelectorAll('[class*="rounded-full"]')
     statusDots.forEach((el) => {
@@ -105,16 +105,16 @@ function TaskCard({ task, onDragStart, onDragEnd }: TaskCardProps) {
       htmlEl.style.height = '10px'
       htmlEl.style.boxShadow = '0 0 0 2px rgba(255, 255, 255, 0.8)'
     })
-    
+
     document.body.appendChild(dragImage)
     dragImageRef.current = dragImage
-    
+
     // Set the custom drag image with offset from cursor
     const rect = originalElement.getBoundingClientRect()
     const offsetX = rect.width / 2
     const offsetY = rect.height / 2
     e.dataTransfer.setDragImage(dragImage, offsetX, offsetY)
-    
+
     if (onDragStart) {
       onDragStart(task)
     }
@@ -122,13 +122,13 @@ function TaskCard({ task, onDragStart, onDragEnd }: TaskCardProps) {
 
   const handleDragEnd = () => {
     setIsDragging(false)
-    
+
     // Clean up the drag image
     if (dragImageRef.current && document.body.contains(dragImageRef.current)) {
       document.body.removeChild(dragImageRef.current)
       dragImageRef.current = null
     }
-    
+
     if (onDragEnd) {
       onDragEnd()
     }
@@ -139,11 +139,10 @@ function TaskCard({ task, onDragStart, onDragEnd }: TaskCardProps) {
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      className={`relative bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-lg transition-all ${
-        isDragging 
-          ? 'opacity-20 scale-95 border-2 border-dashed border-indigo-400 bg-indigo-50 cursor-grabbing' 
-          : 'hover:scale-[1.03] hover:border-indigo-400 hover:shadow-xl hover:z-10 cursor-grab'
-      }`}
+      className={`relative bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-lg transition-all ${isDragging
+        ? 'opacity-60 scale-95 border-2 border-dashed border-indigo-400 bg-indigo-50 cursor-grabbing'
+        : 'hover:scale-[1.03] hover:border-indigo-400 hover:shadow-xl hover:z-10 cursor-grab'
+        }`}
       style={{
         transformOrigin: 'center center',
       }}
